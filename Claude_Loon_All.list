@@ -19,6 +19,8 @@ DOMAIN-SUFFIX,claudeusercontent.com
 DOMAIN-SUFFIX,claude.app
 # claude.dev: geosite:anthropic classical source
 DOMAIN-SUFFIX,claude.dev
+# claude.site: Anthropic-owned host referenced by platform.claude.com (observed 2026-10-09)
+DOMAIN-SUFFIX,claude.site
 
 # 03 | Net.Coffee: CDN and static assets
 # cdn.anthropic.com is already matched by DOMAIN-SUFFIX,anthropic.com
@@ -28,10 +30,16 @@ DOMAIN,anthropic.com.cdn.cloudflare.net
 # 04 | Net.Coffee: login and content
 DOMAIN,anthropic.auth0.com
 DOMAIN,anthropic-com.ghost.io
+# hCaptcha on claude.ai/login (observed 2026-10-09); shared with other sites using hCaptcha
+DOMAIN-SUFFIX,hcaptcha.com
+# "Continue with Google" sign-in; WARNING: ALL Google sign-ins on this device will use this policy
+DOMAIN,accounts.google.com
 
 # 05 | Net.Coffee: monitoring and product telemetry
 DOMAIN-SUFFIX,sentry.io
 DOMAIN-SUFFIX,statsigapi.net
+# Statsig API (api.statsig.com), per ConnersHua/RuleGo AI.list
+DOMAIN-SUFFIX,statsig.com
 DOMAIN,browser-intake-us5-datadoghq.com
 # This additional Datadog hostname is in official Anthropic network requirements:
 DOMAIN,http-intake.logs.us5.datadoghq.com
@@ -65,6 +73,10 @@ DOMAIN,cdn.jsdelivr.net
 DOMAIN,cdn.tailwindcss.com
 DOMAIN,code.jquery.com
 DOMAIN,unpkg.com
+# www.anthropic.com runs on Webflow (observed 2026-10-09); shared by ALL Webflow-hosted sites
+DOMAIN,cdn.prod.website-files.com
+DOMAIN,d3e54v103j8qbb.cloudfront.net
+DOMAIN-SUFFIX,hubspotonwebflow.com
 
 # 08 | Net.Coffee: IPv4 / IPv6 / ASN fallback; no-resolve only matches already-known IP destinations
 IP-CIDR,160.79.104.0/21,no-resolve
