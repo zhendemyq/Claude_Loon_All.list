@@ -1,0 +1,78 @@
+# Claude / Claude Code - Net.Coffee COMPLETE + shared dependencies (ALL-IN-ONE) for Loon
+# Source: https://ip.net.coffee/claude/site.html (reviewed 2026-10-09)
+# Additional primary-source checks: https://code.claude.com/docs/en/network-config
+# Loon remote rule: one rule per line, with NO policy column.
+# Bind a single fixed proxy/policy in [Remote Rule] settings.
+# WARNING: shared third-party domains and DOMAIN-KEYWORD rules may affect other applications.
+
+# 01 | Net.Coffee: 7 core domain suffixes; includes api/mcp/console/workbench.anthropic.com
+DOMAIN-SUFFIX,anthropic.com
+DOMAIN-SUFFIX,claude.ai
+DOMAIN-SUFFIX,claude.com
+DOMAIN-SUFFIX,clau.de
+DOMAIN-SUFFIX,claudemcpclient.com
+DOMAIN-SUFFIX,claudemcpcontent.com
+DOMAIN-SUFFIX,claudeusercontent.com
+
+# 02 | Additional coverage outside Net.Coffee explicit lists
+# claude.app: official Anthropic desktop documentation
+DOMAIN-SUFFIX,claude.app
+# claude.dev: geosite:anthropic classical source
+DOMAIN-SUFFIX,claude.dev
+
+# 03 | Net.Coffee: CDN and static assets
+# cdn.anthropic.com is already matched by DOMAIN-SUFFIX,anthropic.com
+DOMAIN,servd-anthropic-website.b-cdn.net
+DOMAIN,anthropic.com.cdn.cloudflare.net
+
+# 04 | Net.Coffee: login and content
+DOMAIN,anthropic.auth0.com
+DOMAIN,anthropic-com.ghost.io
+
+# 05 | Net.Coffee: monitoring and product telemetry
+DOMAIN-SUFFIX,sentry.io
+DOMAIN-SUFFIX,statsigapi.net
+DOMAIN,browser-intake-us5-datadoghq.com
+# This additional Datadog hostname is in official Anthropic network requirements:
+DOMAIN,http-intake.logs.us5.datadoghq.com
+
+# 06 | Net.Coffee: third-party widgets and traffic statistics
+DOMAIN-SUFFIX,intercom.io
+DOMAIN-SUFFIX,intercomcdn.com
+DOMAIN,cdn.usefathom.com
+
+# 07 | Net.Coffee: catchall keywords (affect OTHER apps, too)
+# The website's monitoring TABLE includes sentry; its copy-paste text omits it.
+DOMAIN-KEYWORD,datadog
+DOMAIN-KEYWORD,sentry
+DOMAIN-KEYWORD,sift
+
+# 09 | Optional shared dependencies (merged from Claude_Loon_MAX_ExtraServices.list)
+# WARNING: GitHub/npm/Google/CDN traffic from ALL apps will use this policy.
+DOMAIN,storage.googleapis.com
+DOMAIN,registry.npmjs.org
+DOMAIN,raw.githubusercontent.com
+DOMAIN,github.com
+DOMAIN,formulae.brew.sh
+# Gerrit change lookup (*-review.googlesource.com) for Claude Desktop Code tab on googlesource.com checkouts.
+# Loon has no mid-label wildcard, so this suffix also matches all other googlesource.com hosts (e.g. Android/Chromium source).
+DOMAIN-SUFFIX,googlesource.com
+# Optional artifact web fonts and libraries: may redirect unrelated app traffic.
+DOMAIN,fonts.googleapis.com
+DOMAIN,fonts.gstatic.com
+DOMAIN,cdnjs.cloudflare.com
+DOMAIN,cdn.jsdelivr.net
+DOMAIN,cdn.tailwindcss.com
+DOMAIN,code.jquery.com
+DOMAIN,unpkg.com
+
+# 08 | Net.Coffee: IPv4 / IPv6 / ASN fallback; no-resolve only matches already-known IP destinations
+IP-CIDR,160.79.104.0/21,no-resolve
+IP-CIDR6,2607:6bc0::/32,no-resolve
+IP-ASN,399358,no-resolve
+# (IP fallback is placed last: domain rules match first)
+
+# NTP note: geosite:category-ntp is not a native Loon rule.
+# Optional separately maintained NTP Loon-compatible ruleset:
+# https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/classical/category-ntp.list
+# NTP uses UTC and cannot reveal timezone; route NTP separately ONLY if required.
