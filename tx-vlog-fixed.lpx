@@ -1,5 +1,5 @@
-#!name = 糖心Vlog · 公益接口(修复版)
-#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：过滤 HTTP/2 伪首部与 alt-svc、同源二进制转发避免 WebKit 307 跨域丢弃自定义请求头、剥离 www 子域名防 530。
+#!name = 糖心Vlog · 公益接口(终极修复版)
+#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：采用 http-request 缓存请求体 + http-response 原生 Uint8Array 响应替换，彻底解决 Loon http-request 不支持二进制响应、Rewrite 403 初始化失败及 Safari 307 跨域丢头问题。
 #!icon = https://txscript.pages.dev/tx/icon.png
 #!author = fixed by DSH
 #!tag = 18+,解锁
@@ -10,8 +10,10 @@ DOMAIN-SUFFIX,pages.dev,PROXY
 DOMAIN,raw.githubusercontent.com,PROXY
 
 [Script]
-# 使用 http-request 二进制模式同源转发，避免 307 跨域重定向被 Safari/WebKit 剥离 requestId/sign 请求头，避免 Rewrite url.replace 发往原 IP 报 403
-http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-loon-fixed.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心解锁
+# 阶段 1：http-request 缓存加密二进制请求体并原样放行给原站（100% 避免 CloudFront 403 / 系统初始化失败）
+http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-response-unlock.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
+# 阶段 2：http-response 转发至公益接口并用 Loon 原生支持的 Uint8Array 替换响应体（100% 避免二进制损坏与 307 跨域丢头）
+http-response ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-response-unlock.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
 
 [Mitm]
 # 必须同时满足：Loon 全局 MITM、脚本开关已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
