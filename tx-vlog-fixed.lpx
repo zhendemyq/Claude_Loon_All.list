@@ -1,8 +1,7 @@
-#!name = 糖心Vlog · 公益接口(307终极修复版)
-#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：采用 HTTP 307 + CORS 跨域重定向，彻底解决 Loon url.replace 发往原 IP 导致“系统初始化失败”以及 $done 二进制响应损坏问题。
+#!name = 糖心Vlog · 公益接口(修复版)
+#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：过滤 HTTP/2 伪首部与 alt-svc、同源二进制转发避免 WebKit 307 跨域丢弃自定义请求头、剥离 www 子域名防 530。
 #!icon = https://txscript.pages.dev/tx/icon.png
 #!author = fixed by DSH
-#!loon_version = 3.5.1(978)
 #!tag = 18+,解锁
 
 [Rule]
@@ -11,9 +10,9 @@ DOMAIN-SUFFIX,pages.dev,PROXY
 DOMAIN,raw.githubusercontent.com,PROXY
 
 [Script]
-# 在 Request Header 阶段直接返回 307 Temporary Redirect + CORS 响应头，客户端自动保持 POST + 二进制加密 Body 请求 txscript.pages.dev
-http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-loon-fixed.js, tag=糖心307解锁, requires-body=false, timeout=10
+# 使用 http-request 二进制模式同源转发，避免 307 跨域重定向被 Safari/WebKit 剥离 requestId/sign 请求头，避免 Rewrite url.replace 发往原 IP 报 403
+http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-loon-fixed.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心解锁
 
 [Mitm]
-# 必须同时满足：Loon 全局 MITM 已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
+# 必须同时满足：Loon 全局 MITM、脚本开关已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
 hostname = *.txxkl7s60j.com, *.tx6cyknm46.com, *.txui3fvxr2.com, *.tx3it6zzx8.com, *.txwnxvha73.com, *.txfdnb0xib.com, *.txqv37xp3c.com, *.txgwp6d7vl.com, *.txsvlcr8yl.com, *.txl83dbwq1.com, *.txh066.com, *.txh067.com, *.txh068.com, *.txh069.com, *.txh087.com, txxkl7s60j.com, tx6cyknm46.com, txui3fvxr2.com, tx3it6zzx8.com, txwnxvha73.com, txfdnb0xib.com, txqv37xp3c.com, txgwp6d7vl.com, txsvlcr8yl.com, txl83dbwq1.com, txh066.com, txh067.com, txh068.com, txh069.com, txh087.com
