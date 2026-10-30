@@ -1,0 +1,19 @@
+#!name = 糖心Vlog · 公益接口(修复版)
+#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：由 Rewrite 改为二进制 Script 转发，彻底解决 HTTP 200 二进制响应被 UTF-8 解码损坏导致“响应数据格式错误”的问题。
+#!icon = https://txscript.pages.dev/tx/icon.png
+#!author = fixed by DSH
+#!loon_version = 3.5.1(978)
+#!tag = 18+,解锁
+
+[Rule]
+# 公益接口与脚本托管在 Cloudflare Pages / GitHub Raw，强制走代理防止国内直连失败
+DOMAIN-SUFFIX,pages.dev,PROXY
+DOMAIN,raw.githubusercontent.com,PROXY
+
+[Script]
+# 必须使用 http-request 脚本并开启 binary-body-mode=true（不能用 [Rewrite] url.replace，否则二进制加密响应会被当成文本损坏；同时脚本内剥离 www. 子域名避免 530）
+http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-loon-fixed.js, tag=糖心解锁, requires-body=true, binary-body-mode=true, timeout=20
+
+[Mitm]
+# 必须同时满足：Loon 全局 MITM 已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
+hostname = *.txxkl7s60j.com, *.tx6cyknm46.com, *.txui3fvxr2.com, *.tx3it6zzx8.com, *.txwnxvha73.com, *.txfdnb0xib.com, *.txqv37xp3c.com, *.txgwp6d7vl.com, *.txsvlcr8yl.com, *.txl83dbwq1.com, *.txh066.com, *.txh067.com, *.txh068.com, *.txh069.com, *.txh087.com, txxkl7s60j.com, tx6cyknm46.com, txui3fvxr2.com, tx3it6zzx8.com, txwnxvha73.com, txfdnb0xib.com, txqv37xp3c.com, txgwp6d7vl.com, txsvlcr8yl.com, txl83dbwq1.com, txh066.com, txh067.com, txh068.com, txh069.com, txh087.com
