@@ -1,5 +1,5 @@
-#!name = 糖心Vlog · 公益接口(修复版)
-#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：同时开启 Rewrite 与 Script 底层二进制 URL 改写，避免 $done({response}) 将 Uint8Array 响应损坏，并自动剥离 www 子域名防止 530。
+#!name = 糖心Vlog · 公益接口(307终极修复版)
+#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：采用 HTTP 307 + CORS 跨域重定向，彻底解决 Loon url.replace 发往原 IP 导致“系统初始化失败”以及 $done 二进制响应损坏问题。
 #!icon = https://txscript.pages.dev/tx/icon.png
 #!author = fixed by DSH
 #!loon_version = 3.5.1(978)
@@ -10,13 +10,9 @@
 DOMAIN-SUFFIX,pages.dev,PROXY
 DOMAIN,raw.githubusercontent.com,PROXY
 
-[Rewrite]
-# 兼容 Loon 3.5.1+ 新版语法与旧版 header 替换（同时将 Host 改为 txscript.pages.dev 并剥离 www 子域名）
-request if ${url} ~= /^https?:\/\/(?:[a-z0-9-]+\.)?(tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch)))/ as m then url.replace("https://txscript.pages.dev/tx/${m.1}/${m.2}") | request.header.set("Host", "txscript.pages.dev")
-
 [Script]
-# 双保险：如果 Rewrite 未命中，使用 http-request 脚本在 Header 阶段直接改写目标 URL（不缓冲/不破坏二进制响应流）
-http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-loon-fixed.js, tag=糖心解锁, requires-body=false, timeout=20
+# 在 Request Header 阶段直接返回 307 Temporary Redirect + CORS 响应头，客户端自动保持 POST + 二进制加密 Body 请求 txscript.pages.dev
+http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-loon-fixed.js?v=3, tag=糖心307解锁, requires-body=false, timeout=10
 
 [Mitm]
 # 必须同时满足：Loon 全局 MITM 已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
