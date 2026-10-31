@@ -1,5 +1,5 @@
 #!name = 糖心Vlog · 公益接口(双引擎修复版 v4)
-#!desc = 糖心Vlog 解锁点播/去广告（H5 + App）。修复：脚本改走 jsDelivr（raw.githubusercontent 国内常连不上导致脚本从未加载）；v4 纯 JS AES+Gzip；匹配全部 /txapi 主机；补 2026-10 App API 域名 MITM；清除 Alt-Svc 防 HTTP/3 绕过 MITM。
+#!desc = 糖心Vlog 解锁点播/去广告（H5 + App）。v4 纯 JS AES+Gzip；匹配全部 /txapi 主机；补 App API 域名 MITM；清除 Alt-Svc 防 HTTP/3 绕过 MITM。
 #!icon = https://txscript.pages.dev/tx/icon.png
 #!author = fixed by DSH
 #!loon_version = 3.5.1(978)
@@ -10,9 +10,8 @@
 response if ${url} ~= /^https?:\/\/(?:[a-z0-9-]+\.)?(?:tx[a-z0-9]+\.com|dapi\.[a-z0-9]+\.icu)\// then response.header.del("alt-svc") | response.header.set("Alt-Svc", "clear")
 
 [Script]
-# 脚本托管在 jsDelivr（勿用 raw.githubusercontent.com，Loon 在国内常下载失败）
-http-request ^https?:\/\/[^/]+\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/tx-unlock-v4.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
-http-response ^https?:\/\/[^/]+\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/tx-unlock-v4.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
+http-request ^https?:\/\/[^/]+\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-unlock-v4.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
+http-response ^https?:\/\/[^/]+\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-unlock-v4.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
 
 [Mitm]
 # 全局 MITM 开关 + 安装并「完全信任」Loon CA；脚本分区开关需打开
