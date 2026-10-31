@@ -1,19 +1,18 @@
-#!name = 糖心Vlog · 公益接口(终极修复版)
-#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：采用 http-request 缓存请求体 + http-response 原生 Uint8Array 响应替换，彻底解决 Loon http-request 不支持二进制响应、Rewrite 403 初始化失败及 Safari 307 跨域丢头问题。
+#!name = 糖心Vlog · 公益接口(双引擎修复版)
+#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：内置本地离线 AES+Gzip 解密引擎 + 公益接口双引擎，移除会导致插件默认 DIRECT 阻断脚本下载的 [Rule]，并清除 Alt-Svc 防止 Safari 走 QUIC(HTTP/3) 绕过 MITM。
 #!icon = https://txscript.pages.dev/tx/icon.png
 #!author = fixed by DSH
 #!tag = 18+,解锁
 
-[Rule]
-# 公益接口与脚本托管在 Cloudflare Pages / GitHub Raw，强制走代理防止国内直连失败
-DOMAIN-SUFFIX,pages.dev,PROXY
-DOMAIN,raw.githubusercontent.com,PROXY
+[Rewrite]
+# 强制清除 CloudFront 的 Alt-Svc (h3=":443") 响应头，防止 iOS Safari 升级到 HTTP/3 (QUIC UDP 443) 从而绕过 Loon 的 TCP MITM 拦截
+response if ${url} ~= /^https?:\/\/(?:[a-z0-9-]+\.)?tx\w+\.com\// then response.header.del("alt-svc") | response.header.set("Alt-Svc", "clear")
 
 [Script]
-# 阶段 1：http-request 缓存加密二进制请求体并原样放行给原站（100% 避免 CloudFront 403 / 系统初始化失败）
-http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-response-unlock.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
-# 阶段 2：http-response 转发至公益接口并用 Loon 原生支持的 Uint8Array 替换响应体（100% 避免二进制损坏与 307 跨域丢头）
-http-response ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-response-unlock.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
+# 阶段 1：http-request 缓存加密二进制请求体并原样放行给原站
+http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-unlock-v3.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
+# 阶段 2：http-response 本地毫秒级离线 AES 解密解锁 VIP/去广告 + 公益接口获取完整 m3u8
+http-response ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-unlock-v3.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
 
 [Mitm]
 # 必须同时满足：Loon 全局 MITM、脚本开关已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
