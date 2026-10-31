@@ -1,19 +1,19 @@
-#!name = 糖心Vlog · 公益接口(双引擎修复版)
-#!desc = 糖心Vlog 解锁点播去除广告（支持 App 与 H5 网页端）。修复：内置本地离线 AES+Gzip 解密引擎 + 公益接口双引擎，移除会导致插件默认 DIRECT 阻断脚本下载的 [Rule]，并清除 Alt-Svc 防止 Safari 走 QUIC(HTTP/3) 绕过 MITM。
+#!name = 糖心Vlog · 公益接口(双引擎修复版 v4)
+#!desc = 糖心Vlog 解锁点播/去广告（H5 + App）。修复：脚本改走 jsDelivr（raw.githubusercontent 国内常连不上导致脚本从未加载）；v4 纯 JS AES+Gzip；匹配全部 /txapi 主机；补 2026-10 App API 域名 MITM；清除 Alt-Svc 防 HTTP/3 绕过 MITM。
 #!icon = https://txscript.pages.dev/tx/icon.png
 #!author = fixed by DSH
+#!loon_version = 3.5.1(978)
 #!tag = 18+,解锁
 
 [Rewrite]
-# 强制清除 CloudFront 的 Alt-Svc (h3=":443") 响应头，防止 iOS Safari 升级到 HTTP/3 (QUIC UDP 443) 从而绕过 Loon 的 TCP MITM 拦截
-response if ${url} ~= /^https?:\/\/(?:[a-z0-9-]+\.)?tx\w+\.com\// then response.header.del("alt-svc") | response.header.set("Alt-Svc", "clear")
+# 清除 CloudFront Alt-Svc，防止 Safari/Chrome 走 QUIC 绕过 Loon TCP MITM
+response if ${url} ~= /^https?:\/\/(?:[a-z0-9-]+\.)?(?:tx[a-z0-9]+\.com|dapi\.[a-z0-9]+\.icu)\// then response.header.del("alt-svc") | response.header.set("Alt-Svc", "clear")
 
 [Script]
-# 阶段 1：http-request 缓存加密二进制请求体并原样放行给原站
-http-request ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-unlock-v3.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
-# 阶段 2：http-response 本地毫秒级离线 AES 解密解锁 VIP/去广告 + 公益接口获取完整 m3u8
-http-response ^https?:\/\/((?:[a-z0-9-]+\.)?tx\w+\.com)\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/tx-unlock-v3.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
+# 脚本托管在 jsDelivr（勿用 raw.githubusercontent.com，Loon 在国内常下载失败）
+http-request ^https?:\/\/[^/]+\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/tx-unlock-v4.js, requires-body=true, binary-body-mode=true, timeout=10, tag=糖心请求缓存
+http-response ^https?:\/\/[^/]+\/(txapi\/(?:user\/info|system\/info|movie\/(?:detail|navBlock|navFilter|blockDetail|similarSearch))) script-path=https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/tx-unlock-v4.js, requires-body=true, binary-body-mode=true, timeout=20, tag=糖心响应解锁
 
 [Mitm]
-# 必须同时满足：Loon 全局 MITM、脚本开关已打开 + CA 证书已安装并在 iOS「设置 -> 通用 -> 关于本机 -> 证书信任设置」里开启完全信任
-hostname = *.txxkl7s60j.com, *.tx6cyknm46.com, *.txui3fvxr2.com, *.tx3it6zzx8.com, *.txwnxvha73.com, *.txfdnb0xib.com, *.txqv37xp3c.com, *.txgwp6d7vl.com, *.txsvlcr8yl.com, *.txl83dbwq1.com, *.txh066.com, *.txh067.com, *.txh068.com, *.txh069.com, *.txh087.com, txxkl7s60j.com, tx6cyknm46.com, txui3fvxr2.com, tx3it6zzx8.com, txwnxvha73.com, txfdnb0xib.com, txqv37xp3c.com, txgwp6d7vl.com, txsvlcr8yl.com, txl83dbwq1.com, txh066.com, txh067.com, txh068.com, txh069.com, txh087.com
+# 全局 MITM 开关 + 安装并「完全信任」Loon CA；脚本分区开关需打开
+hostname = *.txxkl7s60j.com, *.tx6cyknm46.com, *.txui3fvxr2.com, *.tx3it6zzx8.com, *.txwnxvha73.com, *.txfdnb0xib.com, *.txqv37xp3c.com, *.txgwp6d7vl.com, *.txsvlcr8yl.com, *.txl83dbwq1.com, *.txh066.com, *.txh067.com, *.txh068.com, *.txh069.com, *.txh087.com, txxkl7s60j.com, tx6cyknm46.com, txui3fvxr2.com, tx3it6zzx8.com, txwnxvha73.com, txfdnb0xib.com, txqv37xp3c.com, txgwp6d7vl.com, txsvlcr8yl.com, txl83dbwq1.com, txh066.com, txh067.com, txh068.com, txh069.com, txh087.com, api.9ittm796.com, api.dtfxllfh.com, api.xx84lecs.com, api.4jlccsqx.com, api.n7pacr.com, api.t1n8vv.com, *.9ittm796.com, *.dtfxllfh.com, *.xx84lecs.com, *.4jlccsqx.com, *.n7pacr.com, *.t1n8vv.com
