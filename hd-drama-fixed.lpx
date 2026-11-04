@@ -1,0 +1,20 @@
+#!name = 黄豆短剧 (NP7) · 全集直通解锁
+#!desc = 黄豆短剧 解锁全集短剧/短视频/去广告（H5 + App）。采用 Loon 3.5.1(983)+ 新语法，避免 [^/] 截断正则；内置纯JS AES-192-CBC 引擎与跨接口正片流缓存。
+#!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Video.png
+#!author = zhendemyq
+#!loon_version = 3.5.1(983)
+#!tag = 18+,短剧,解锁
+
+[Rule]
+DOMAIN-KEYWORD, cnzz, REJECT
+DOMAIN-KEYWORD, 51.la, REJECT
+DOMAIN, stat.tupiandq.com, REJECT
+
+[Rewrite]
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/(?:api\/)?[a-f0-9]{32}/i then response.header.del("alt-svc") | response.header.set("Alt-Svc", "clear")
+
+[Script]
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/(?:api\/)?[a-f0-9]{32}/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/huangdou_unlock.js") with tag="黄豆短剧响应解锁", timeout=20, requires_body=true
+
+[Mitm]
+hostname = *.ejqnp7jksd.com, *.cotwhale.com, *.chgnysbdpkmftwl.com, *.vkxmqzjfltwbrph.com, *.gfnp7lkjsa.com, *.rnmhp.com, aapi.ejqnp7jksd.com, bapi.ejqnp7jksd.com, capi.ejqnp7jksd.com, dapi.ejqnp7jksd.com, bpi.ejqnp7jksd.com, cpi.ejqnp7jksd.com, dpi.ejqnp7jksd.com, epi.ejqnp7jksd.com, np7api01.cotwhale.com, np7api02.cotwhale.com, dcmnbz535jvfh.cloudfront.net, d2b6ax5c42u2ef.cloudfront.net, d367xgl9czjyab.cloudfront.net, d3h2ezpid6hfqb.cloudfront.net, d3dxmafxpahgod.cloudfront.net, d2g43akfb2l76p.cloudfront.net, d2oug31e800a3e.cloudfront.net, d2wmzwms5egp0f.cloudfront.net
