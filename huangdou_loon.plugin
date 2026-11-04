@@ -1,0 +1,16 @@
+#!name = 黄豆短剧 (NP7) · 全集直通解锁
+#!desc = 针对黄豆短剧真实后端协议(动态MD5路径混淆 + AES-192-CBC全报文加密)实现VIP权限注入与短剧全集正片流直通解锁
+#!author = zhendemyq
+#!homepage = https://github.com/zhendemyq/Claude_Loon_All.list
+#!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Video.png
+
+[Rule]
+DOMAIN-KEYWORD, cnzz, REJECT
+DOMAIN-KEYWORD, 51.la, REJECT
+DOMAIN, stat.tupiandq.com, REJECT
+
+[Script]
+http-response ^https?:\/\/[a-z0-9.-]+\/(?:api\/)?[a-f0-9]{32}(\?.*)?$ script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/huangdou_unlock.js, requires-body=true, max-size=5242880, timeout=20, tag=黄豆短剧_AES192解锁
+
+[MitM]
+hostname = *.ejqnp7jksd.com, *.cotwhale.com, *.chgnysbdpkmftwl.com, *.vkxmqzjfltwbrph.com, *.gfnp7lkjsa.com, *.rnmhp.com, aapi.ejqnp7jksd.com, bapi.ejqnp7jksd.com, capi.ejqnp7jksd.com, dapi.ejqnp7jksd.com, bpi.ejqnp7jksd.com, cpi.ejqnp7jksd.com, dpi.ejqnp7jksd.com, epi.ejqnp7jksd.com, np7api01.cotwhale.com, np7api02.cotwhale.com, dcmnbz535jvfh.cloudfront.net, d2b6ax5c42u2ef.cloudfront.net, d367xgl9czjyab.cloudfront.net, d3h2ezpid6hfqb.cloudfront.net, d3dxmafxpahgod.cloudfront.net, d2g43akfb2l76p.cloudfront.net, d2oug31e800a3e.cloudfront.net, d2wmzwms5egp0f.cloudfront.net
