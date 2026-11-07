@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v4(镜像版)
+#!name = 黄果短剧去广告纯净版 v5(镜像版)
 #!desc = 同 v4，脚本改用 jsDelivr 镜像，适合无法访问 raw.githubusercontent.com 的网络环境
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
@@ -18,5 +18,7 @@ response if ${url} ~= /\/api\/ad\/query/i && ${response.status} == 200 then resp
 response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_adblock.js") with tag="黄果短剧_去广告与公告", timeout=15, requires_body=true
 response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
 
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/v1\/(?:app\/config|content\/short-drama\/feed-ads|content\/theater\/notice)/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgapp_adblock.js") with tag="黄果短剧APP_去广告", timeout=30, requires_body=true
+
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
+hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop, *.wjrcvvvx.cc, *.udcdftpb.cc
