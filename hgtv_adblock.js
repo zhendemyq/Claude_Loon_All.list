@@ -219,13 +219,17 @@ function encryptAES(str) {
   try {
     var reqBody = (typeof $request !== "undefined" && $request && $request.body) ? String($request.body) : "";
     if (reqBody.indexOf(AD_QUERY_REQ_CIPHER) !== -1 || reqBody.indexOf(AD_EVENT_REQ_PREFIX) !== -1) {
-      $done({
-        body: JSON.stringify({
-          code: 0,
-          message: "success",
-          data: EMPTY_OBJ_CIPHER
-        })
-      });
+      // 快速路径：保留原始响应的 code/message/request_id 等字段，只替换密文载荷
+      var outBody;
+      try {
+        var origResp = JSON.parse($response.body);
+        if (origResp && typeof origResp.data === "string") origResp.data = EMPTY_OBJ_CIPHER;
+        if (origResp && typeof origResp.cipher === "string") origResp.cipher = EMPTY_OBJ_CIPHER;
+        outBody = JSON.stringify(origResp);
+      } catch (_e) {
+        outBody = JSON.stringify({ code: 0, message: "success", data: EMPTY_OBJ_CIPHER });
+      }
+      $done({ body: outBody });
       return;
     }
 
