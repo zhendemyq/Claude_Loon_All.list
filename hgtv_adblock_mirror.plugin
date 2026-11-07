@@ -1,39 +1,28 @@
-#!name = 黄果短剧去广告纯净版 v10(镜像版)
-#!desc = 同 v8（仅 H5 网页版），脚本改用 jsDelivr 镜像，适合无法访问 raw.githubusercontent.com 的网络环境
+#!name = 黄果短剧去广告纯净版 v11(镜像版)
+#!desc = 与正式版内容完全一致。v11 起已不使用任何远程脚本，本文件仅保留给仍指向旧镜像地址的用户
 #!author = zhendemyq
-#!loon_version = 3.5.1(983)
+#!loon_version = 3.5.1(978)
+#!date = 2026-11-07
+#!type = normal
 #!tag = 去广告
 
-# 仅当正式版（raw.githubusercontent.com）脚本拉取失败时使用本文件
-# 注意：jsDelivr 有缓存，仓库更新后可能延迟数小时才生效，可用 @main 强制最新（本文件已用 @main）
+# v11 起去掉全部 [Script]：所有改写均由 Loon 原生 rewrite 指令本地完成，
+# 不再依赖 raw.githubusercontent.com / jsDelivr，因此"正式版"和"镜像版"已无区别。
 
 [Rule]
-# ============ 网页版 huangguoai.com（主战场）============
-# 站点自建 SSP 会向第三方广告网络 api-ad3/4/5.adsdk*.cc 拉取广告，
-# 一次 /api/sdk/ad/available 就返回 75KB 广告配置；直接封死这些域名，广告位拿不到素材就渲染不出来。
 DOMAIN-KEYWORD,adsdk,REJECT
 DOMAIN-SUFFIX,adsdk3.cc,REJECT
 DOMAIN-SUFFIX,adsdk4.cc,REJECT
 DOMAIN-SUFFIX,adsdk5.cc,REJECT
-# 广告事件上报节点（广告曝光/点击统计，不影响正片播放）
 DOMAIN,api-dc-prod-008.cyou,REJECT
 DOMAIN,api-dc2-prod-08.cyou,REJECT
-# 网页版广告 SDK 脚本本体：直接拦掉，SDK 不加载就无从渲染（也绕开本地缓存）
 URL-REGEX,^https?://[a-z0-9.-]+/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js),REJECT
-# ============ 旧 H5 SPA（备用线路）埋点 ============
-URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
-URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
+URL-REGEX,^https?://[a-z0-9.-]+/api/sdk/ad/,REJECT-DICT
 
 [Rewrite]
-response if ${url} ~= /\/api\/ad\/query/i && ${response.status} == 200 then response.json.replace("data", "jIY1j26vNjsdMuRZijJHvQ==")
-
-[Script]
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_adblock.js") with tag="黄果短剧_去广告与公告", timeout=15, requires_body=true
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
-
-
-# 网页版 HTML 改写：折叠并抹掉 10 个广告位（ssp-mount 靠 data-ssp-slot-key 找挂载点）+ 清理 SDK 本地广告缓存
-response if ${url} ~= /^https?:\/\/(?:(?:[a-z0-9-]+\.)*huangguoai\.(?:com|cc|app)|huangguoai\.pages\.dev)\/(?:$|\?|(?:video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail)(?:\/|$|\?))/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgweb_adblock.js") with tag="黄果网页_广告位清除", timeout=20, requires_body=true
+^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex <aside[^>]*data-ssp-slot-key[^>]*></aside> <!--hg-ad-removed-->
+^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}</style></head>
+^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
 
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, huangguoai.pages.dev, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
+hostname = huangguoai.com, *.huangguoai.com, huangguoai.cc, *.huangguoai.cc, huangguoai.app, *.huangguoai.app, huangguoai.pages.dev, *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop

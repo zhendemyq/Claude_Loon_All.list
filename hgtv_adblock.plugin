@@ -1,54 +1,61 @@
-#!name = 黄果短剧去广告纯净版 v10
-#!desc = huangguoai.com 网页版专用：封锁第三方广告网络 adsdk*.cc，广告位拿不到素材；另含旧 SPA 接口清洗
+#!name = 黄果短剧去广告纯净版 v11
+#!desc = huangguoai.com 网页版：直接把广告位 DOM 节点从 HTML 里删掉，零远程脚本、零下载依赖
 #!author = zhendemyq
-#!loon_version = 3.5.1(983)
+#!loon_version = 3.5.1(978)
 #!date = 2026-11-07
 #!type = normal
 #!tag = 去广告
 
-# 2026-11-07 v4 修正记录（对接线上网关实测）：
-# 1) 线上前端已不再调用 /api/dispatch，实际调用 /api/ad/query 与 /api/app/config；
-#    旧规则只匹配 dispatch，导致脚本一次都不执行 —— 这是"配置全对但广告还在"的根因之一
-# 2) Loon 3.5.1(983)+ 使用新 Script 语法；旧 http-response + [^\/] 写法会被判为无效条目静默忽略
-# 3) 新增 Rewrite 层：response.json.replace 直接把 /api/ad/query 的 data 改成空对象密文，
-#    不依赖 raw.githubusercontent.com 下载脚本，即使手机拉不到脚本广告也能清掉
-# 4) MITM 补齐动态域名池 hgai_ops.txt 最新 4 个网关域名
+# ======================================================================
+# v11 关键修复（实测依据：直接抓取 huangguoai.com 首页 154KB / 详情页 201KB 真实 HTML）
 #
-# 实测依据（Node 复现网关签名后直连验证）：
-#   /api/ad/query 返回 9 个广告位 "1","2","4","5","7","8","9","10","14"，密文位于 data 字段
-#   空对象密文 "jIY1j26vNjsdMuRZijJHvQ==" 解密结果 = {}
-#   /api/app/config 的 extra.sys_notice 长度 436、official_post_text 非空
+# 【根因 1】MITM 漏了裸域 —— 这是 v4~v10 全部失效的真正原因
+#   旧配置只写了 *.huangguoai.com。Loon 的 * 通配不包含裸域，
+#   "huangguoai.com" 这个主机名不在解密列表里 → 浏览器访问的 https://huangguoai.com/
+#   全程 TLS 未解密 → [Rewrite] 和 [Script] 一条都不会执行，连 URL-REGEX 规则也看不到路径。
+#   本版把裸域 huangguoai.com / .cc / .app 全部显式写入。
+#
+# 【根因 2】广告位是服务端渲染的空壳 <aside>，删 DOM 比隐藏/改属性都干净
+#   真实结构（首页 3 个、视频页 9 个）：
+#     <aside class="hg-ssp-slot" data-ssp-slot-key="banner_home_top_card_001"
+#            data-ssp-format="banner" ... style="min-height:179px;width:100%;..."></aside>
+#   注意 style 里写死了 min-height:179px —— 只要节点还在，哪怕没有素材也会留一条 179px 空白。
+#   本版用 response-body-replace-regex 把整个 <aside ...></aside> 从源码里删掉，
+#   连节点都不存在，ssp-mount.js 想挂载也找不到宿主。
+#
+# 【根因 3】旧版所有逻辑都在远程 .js 里，脚本拉不到就全军覆没
+#   本版 [Rewrite] 全部用 Loon 原生指令（Build 729+ 即支持），不下载任何文件，
+#   即使手机完全连不上 raw.githubusercontent.com 也照常生效。
+# ======================================================================
 
 [Rule]
 # ============ 网页版 huangguoai.com（主战场）============
-# 站点自建 SSP 会向第三方广告网络 api-ad3/4/5.adsdk*.cc 拉取广告，
-# 一次 /api/sdk/ad/available 就返回 75KB 广告配置；直接封死这些域名，广告位拿不到素材就渲染不出来。
+# 站点自建 SSP 会向第三方广告网络 api-ad 系列拉广告，一次 /api/sdk/ad/available 返回 75KB 配置
+# 直接封死这些域名，广告位拿不到素材（本版同时删 DOM，属于双保险）
 DOMAIN-KEYWORD,adsdk,REJECT
 DOMAIN-SUFFIX,adsdk3.cc,REJECT
 DOMAIN-SUFFIX,adsdk4.cc,REJECT
 DOMAIN-SUFFIX,adsdk5.cc,REJECT
-# 广告事件上报节点（广告曝光/点击统计，不影响正片播放）
+# 广告事件上报节点（曝光/点击统计，不影响正片播放）
 DOMAIN,api-dc-prod-008.cyou,REJECT
 DOMAIN,api-dc2-prod-08.cyou,REJECT
-# 网页版广告 SDK 脚本本体：直接拦掉，SDK 不加载就无从渲染（也绕开本地缓存）
+# 广告 SDK 脚本本体：拦掉，SDK 不加载就无从渲染
 URL-REGEX,^https?://[a-z0-9.-]+/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js),REJECT
-# ============ 旧 H5 SPA（备用线路）埋点 ============
-URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
-URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
+# 广告配置下发接口：直接回空 JSON，杜绝任何残留素材
+URL-REGEX,^https?://[a-z0-9.-]+/api/sdk/ad/,REJECT-DICT
 
 [Rewrite]
-# 第一层（纯本地，零依赖）：广告位接口 data 直接换成空对象密文，9 个广告位一次清空
-response if ${url} ~= /\/api\/ad\/query/i && ${response.status} == 200 then response.json.replace("data", "jIY1j26vNjsdMuRZijJHvQ==")
+# ---------- 1. 删除广告位 DOM 节点（核心）----------
+# 匹配所有页面（首页/视频详情/排行/搜索/专题…）里的 <aside ... data-ssp-slot-key ...></aside>
+# 注意：Loon 旧版 rewrite 语法以空格分隔参数，本行正则与替换值均不含空格
+^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex <aside[^>]*data-ssp-slot-key[^>]*></aside> <!--hg-ad-removed-->
 
-[Script]
-# 第二层：加密公告/新客弹窗（载荷是 AES 密文，需解密后清空并重加密）
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_adblock.js") with tag="黄果短剧_去广告与公告", timeout=15, requires_body=true
-# 第三层：前端路由补丁，秒过 5 秒开屏倒计时 + 前端层短路广告查询与系统公告
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
+# ---------- 2. 注入 CSS 兜底（防 SDK 动态插入的悬浮/暂停广告）----------
+^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}</style></head>
 
-
-# 网页版 HTML 改写：折叠并抹掉 10 个广告位（ssp-mount 靠 data-ssp-slot-key 找挂载点）+ 清理 SDK 本地广告缓存
-response if ${url} ~= /^https?:\/\/(?:(?:[a-z0-9-]+\.)*huangguoai\.(?:com|cc|app)|huangguoai\.pages\.dev)\/(?:$|\?|(?:video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail)(?:\/|$|\?))/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgweb_adblock.js") with tag="黄果网页_广告位清除", timeout=20, requires_body=true
+# ---------- 3. 广告位接口返回的密文换成空对象密文 ----------
+^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
 
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, huangguoai.pages.dev, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
+# 必须显式写裸域：Loon 的 *.xxx 通配不包含 xxx 本身
+hostname = huangguoai.com, *.huangguoai.com, huangguoai.cc, *.huangguoai.cc, huangguoai.app, *.huangguoai.app, huangguoai.pages.dev, *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
