@@ -1,5 +1,5 @@
-#!name = 黄果短剧去广告纯净版 v12
-#!desc = 覆盖全部站点域名（含最新线路域名），直接删广告位 DOM 节点，零远程脚本
+#!name = 黄果短剧去广告纯净版 v13
+#!desc = 删广告位DOM+掐断首页轮播广告接口，覆盖全部站点域名，零远程脚本
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
 #!date = 2026-11-07
@@ -7,6 +7,10 @@
 #!tag = 去广告
 
 # ======================================================================
+# v13 新增：掐断首页大图轮播广告的供数接口 /api/site/home-slots
+#   （home-hero.js 把该接口返回的 isAd 项合并进轮播；接口失败会被静默 catch，
+#     轮播只播 SSR 里的真实剧集，无副作用。同时掐 /api/sdk/ad/* 兜底供数口。）
+#
 # v12 修的是 v11 仍然"没反应"的真正原因：域名根本对不上
 #
 # 站点官方地址发布页（hgai12.com）明确写着：
@@ -44,6 +48,12 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 # ---------- SSP 广告 SDK 本体 ----------
 # 站点源码注释自述：故意把 SDK 改名成 ssp-core（"带 ad 字样的路径会被拦截插件整条拦掉"）
 URL-REGEX,^https?://[a-z0-9.-]+/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js),REJECT
+# ---------- 首页轮播广告（v13 新增，就是顶部"春药商城"那种大图） ----------
+# home-hero.js 会 POST /api/site/home-slots，把返回的 data.items 里 isAd=true 的项
+# 合并进首页大图轮播。SSR 初始数据全是真剧集且 JS 自己会过滤 isAd，
+# 所以把这个接口掐掉后 fetch 抛错被静默 catch，轮播只播真实剧集，无任何副作用。
+# /api/sdk/ad/* 是 ssp-core 的兜底供数口，一并掐掉（双保险）。
+URL-REGEX,^https?://[a-z0-9.-]+/api/(site/home-slots|sdk/ad/),REJECT
 
 [Rewrite]
 # ===== 1. 删除广告位 DOM 节点（主域 + 中转域 + 全部线路域名）=====
