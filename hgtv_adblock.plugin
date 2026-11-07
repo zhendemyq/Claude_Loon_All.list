@@ -1,5 +1,5 @@
-#!name = 黄果短剧去广告纯净版 v8
-#!desc = H5 网页版专用：Rewrite 清广告接口（纯本地）+ Script 清加密公告与开屏倒计时
+#!name = 黄果短剧去广告纯净版 v9
+#!desc = huangguoai.com 网页版专用：封锁第三方广告网络 adsdk*.cc，广告位拿不到素材；另含旧 SPA 接口清洗
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
 #!date = 2026-11-07
@@ -20,6 +20,17 @@
 #   /api/app/config 的 extra.sys_notice 长度 436、official_post_text 非空
 
 [Rule]
+# ============ 网页版 huangguoai.com（主战场）============
+# 站点自建 SSP 会向第三方广告网络 api-ad3/4/5.adsdk*.cc 拉取广告，
+# 一次 /api/sdk/ad/available 就返回 75KB 广告配置；直接封死这些域名，广告位拿不到素材就渲染不出来。
+DOMAIN-KEYWORD,adsdk,REJECT
+DOMAIN-SUFFIX,adsdk3.cc,REJECT
+DOMAIN-SUFFIX,adsdk4.cc,REJECT
+DOMAIN-SUFFIX,adsdk5.cc,REJECT
+# 广告事件上报节点（广告曝光/点击统计，不影响正片播放）
+DOMAIN,api-dc-prod-008.cyou,REJECT
+DOMAIN,api-dc2-prod-08.cyou,REJECT
+# ============ 旧 H5 SPA（备用线路）埋点 ============
 URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
 URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
 

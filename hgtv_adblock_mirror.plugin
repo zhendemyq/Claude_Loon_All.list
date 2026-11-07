@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v8(镜像版)
+#!name = 黄果短剧去广告纯净版 v9(镜像版)
 #!desc = 同 v8（仅 H5 网页版），脚本改用 jsDelivr 镜像，适合无法访问 raw.githubusercontent.com 的网络环境
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
@@ -8,6 +8,17 @@
 # 注意：jsDelivr 有缓存，仓库更新后可能延迟数小时才生效，可用 @main 强制最新（本文件已用 @main）
 
 [Rule]
+# ============ 网页版 huangguoai.com（主战场）============
+# 站点自建 SSP 会向第三方广告网络 api-ad3/4/5.adsdk*.cc 拉取广告，
+# 一次 /api/sdk/ad/available 就返回 75KB 广告配置；直接封死这些域名，广告位拿不到素材就渲染不出来。
+DOMAIN-KEYWORD,adsdk,REJECT
+DOMAIN-SUFFIX,adsdk3.cc,REJECT
+DOMAIN-SUFFIX,adsdk4.cc,REJECT
+DOMAIN-SUFFIX,adsdk5.cc,REJECT
+# 广告事件上报节点（广告曝光/点击统计，不影响正片播放）
+DOMAIN,api-dc-prod-008.cyou,REJECT
+DOMAIN,api-dc2-prod-08.cyou,REJECT
+# ============ 旧 H5 SPA（备用线路）埋点 ============
 URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
 URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
 
