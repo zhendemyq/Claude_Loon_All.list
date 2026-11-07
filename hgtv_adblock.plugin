@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v6
+#!name = 黄果短剧去广告纯净版 v7
 #!desc = 覆盖 H5 网页版与 Flutter APP：Rewrite 清 H5 广告接口，全量递归清洗 /api/v1 全部接口的广告 + main.dart.js 试看15秒破解 + SW 缓存禁用
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)

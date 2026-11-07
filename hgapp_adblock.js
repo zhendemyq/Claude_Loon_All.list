@@ -318,6 +318,24 @@ function encryptAES(str) {
         if (!Object.prototype.hasOwnProperty.call(o, k)) continue;
         var v = o[k];
 
+        // 伪解锁：未解锁且带预览源的剧集 → is_unlocked=1，用预览源填充空的播放源。
+        // 客户端付费弹窗条件 = coins>0 && 用户金币<=0 && !is_free && !is_unlocked && can_buy
+        // （main.dart.js A.hK.aCh），is_unlocked=1 即不弹；预览流本身是完整可播的 m3u8。
+        if (o.is_unlocked === 0 && (o.preview_url || (o.preview_sources && typeof o.preview_sources === "object"))) {
+          o.is_unlocked = 1; changed = true;
+          if (o.unlock_reason !== undefined) o.unlock_reason = "unlocked";
+          var pv = (o.preview_sources && typeof o.preview_sources === "object") ? o.preview_sources : null;
+          var u264 = (pv && pv.url_264) || o.preview_url || "";
+          var u265 = (pv && pv.url_265) || u264;
+          if (u264) {
+            if (!o.video_sources || typeof o.video_sources !== "object") {
+              o.video_sources = { is_hash: false, url_264: "", url_265: "" };
+            }
+            if (!o.video_sources.url_264) { o.video_sources.url_264 = u264; changed = true; }
+            if (!o.video_sources.url_265) { o.video_sources.url_265 = u265; changed = true; }
+          }
+        }
+
         // 广告位集合对象 data.ads.{slot}.items / data.ads.feed.items
         if (k === "ads" && v && typeof v === "object" && !Array.isArray(v)) {
           for (var k2 in v) {
