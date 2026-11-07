@@ -1,5 +1,5 @@
-#!name = 黄果短剧去广告纯净版 v7(镜像版)
-#!desc = 同 v6，脚本改用 jsDelivr 镜像，适合无法访问 raw.githubusercontent.com 的网络环境
+#!name = 黄果短剧去广告纯净版 v8(镜像版)
+#!desc = 同 v8（仅 H5 网页版），脚本改用 jsDelivr 镜像，适合无法访问 raw.githubusercontent.com 的网络环境
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
 #!tag = 去广告
@@ -18,10 +18,6 @@ response if ${url} ~= /\/api\/ad\/query/i && ${response.status} == 200 then resp
 response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_adblock.js") with tag="黄果短剧_去广告与公告", timeout=15, requires_body=true
 response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
 
-# ---- Flutter APP 层 1：/api/v1 全量递归清洗 ----
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/v1\//i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgapp_adblock.js") with tag="黄果APP_全量去广告", timeout=60, requires_body=true
-# ---- Flutter APP 层 2：main.dart.js 试看15秒破解 + 禁用 SW 缓存 ----
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/(?:main\.dart\.js|flutter_service_worker\.js|version\.json)/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgapp_dart_patch.js") with tag="黄果APP_试看破解", timeout=60, requires_body=true
 
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop, *.wjrcvvvx.cc, *.udcdftpb.cc
+hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop

@@ -1,5 +1,5 @@
-#!name = 黄果短剧去广告纯净版 v7
-#!desc = 覆盖 H5 网页版与 Flutter APP：Rewrite 清 H5 广告接口，全量递归清洗 /api/v1 全部接口的广告 + main.dart.js 试看15秒破解 + SW 缓存禁用
+#!name = 黄果短剧去广告纯净版 v8
+#!desc = H5 网页版专用：Rewrite 清广告接口（纯本地）+ Script 清加密公告与开屏倒计时
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
 #!date = 2026-11-07
@@ -33,10 +33,6 @@ response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i 
 # 第三层：前端路由补丁，秒过 5 秒开屏倒计时 + 前端层短路广告查询与系统公告
 response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
 
-# ---- Flutter APP 层 1：/api/v1 全量递归清洗（不枚举端点，任何埋广告的接口都会被清掉）----
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/v1\//i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgapp_adblock.js") with tag="黄果APP_全量去广告", timeout=60, requires_body=true
-# ---- Flutter APP 层 2：main.dart.js 试看15秒破解 + 禁用 Service Worker 缓存 ----
-response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/(?:main\.dart\.js|flutter_service_worker\.js|version\.json)/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgapp_dart_patch.js") with tag="黄果APP_试看破解", timeout=60, requires_body=true
 
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop, *.wjrcvvvx.cc, *.udcdftpb.cc
+hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
