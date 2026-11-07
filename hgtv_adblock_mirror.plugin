@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v13(镜像版)
+#!name = 黄果短剧去广告纯净版 v14(镜像版)
 #!desc = 与正式版内容完全一致；镜像版仅为兼容旧订阅地址保留
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
@@ -7,6 +7,12 @@
 #!tag = 去广告
 
 # ======================================================================
+# v14：全部拦截改走 [Rewrite] 立即响应
+#   用户反馈 v13 后"点击/播放特别慢"：Loon [Rule] REJECT 是直接断连，
+#   Safari 会重试干等到超时。改用 reject-dict 立刻回 {}（合法 JSON/JS），
+#   前端立刻拿到响应：广告判断失败静默跳过，页面不再卡。
+#   同时把徽标改为带版本号 AD-BLOCK-v14，便于远程确认用户跑的是哪版。
+#
 # v13 新增：掐断首页大图轮播广告的供数接口 /api/site/home-slots
 #   （home-hero.js 把该接口返回的 isAd 项合并进轮播；接口失败会被静默 catch，
 #     轮播只播 SSR 里的真实剧集，无副作用。同时掐 /api/sdk/ad/* 兜底供数口。）
@@ -38,22 +44,13 @@
 # ======================================================================
 
 [Rule]
-# ---------- 第三方广告网络 & 上报节点 ----------
+# ---------- 第三方广告网络 & 上报节点（跨域请求，断连不影响页面速度） ----------
 DOMAIN-KEYWORD,adsdk,REJECT
 DOMAIN-SUFFIX,adsdk3.cc,REJECT
 DOMAIN-SUFFIX,adsdk4.cc,REJECT
 DOMAIN-SUFFIX,adsdk5.cc,REJECT
 DOMAIN,api-dc-prod-008.cyou,REJECT
 DOMAIN,api-dc2-prod-08.cyou,REJECT
-# ---------- SSP 广告 SDK 本体 ----------
-# 站点源码注释自述：故意把 SDK 改名成 ssp-core（"带 ad 字样的路径会被拦截插件整条拦掉"）
-URL-REGEX,^https?://[a-z0-9.-]+/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js),REJECT
-# ---------- 首页轮播广告（v13 新增，就是顶部"春药商城"那种大图） ----------
-# home-hero.js 会 POST /api/site/home-slots，把返回的 data.items 里 isAd=true 的项
-# 合并进首页大图轮播。SSR 初始数据全是真剧集且 JS 自己会过滤 isAd，
-# 所以把这个接口掐掉后 fetch 抛错被静默 catch，轮播只播真实剧集，无任何副作用。
-# /api/sdk/ad/* 是 ssp-core 的兜底供数口，一并掐掉（双保险）。
-URL-REGEX,^https?://[a-z0-9.-]+/api/(site/home-slots|sdk/ad/),REJECT
 
 [Rewrite]
 # ===== 1. 删除广告位 DOM 节点（主域 + 中转域 + 全部线路域名）=====
@@ -63,13 +60,26 @@ URL-REGEX,^https?://[a-z0-9.-]+/api/(site/home-slots|sdk/ad/),REJECT
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex prerollAd hgxPrerollAd playAd hgxPlayAd
 
 # ===== 3. 注入 CSS 兜底（防 SDK 动态插入的悬浮/暂停/宫格广告）=====
-^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-ON';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-v14';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
 
 # ===== 4. 广告位配置接口：密文换成空对象密文（解出来是 {}）=====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
 
 # ===== 5. 贴片广告素材接口：直接回空 JSON =====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/media/prerolls/ reject-dict
+
+# ===== 6. (v14) 首页轮播广告供数接口：立刻回空 JSON =====
+# home-hero.js POST 此接口，把 data.items 里 isAd=true 的项合并进首页大图轮播。
+# 回 {} 后 status!==1，前端直接忽略，轮播只播 SSR 里的真实剧集。
+# v13 用 [Rule] REJECT 断连，前端干等超时 → 又慢又可能没拦住；Rewrite 是立即响应。
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/site/home-slots reject-dict
+
+# ===== 7. (v14) SSP SDK 兜底供数口：立刻回空 JSON =====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/sdk/ad/ reject-dict
+
+# ===== 8. (v14) SSP 广告 SDK 脚本本体：回 200 空 JSON（合法 JS，不报错不重试） =====
+# 站点源码注释自述：故意把 SDK 改名成 ssp-core（"带 ad 字样的路径会被拦截插件整条拦掉"）
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js) reject-dict
 
 [MITM]
 # ⚠️ 裸域必须单独写：Loon 的 *.x 通配不包含 x 本身（官方示例里 example.com 与 *.example.org 就是分开的）
