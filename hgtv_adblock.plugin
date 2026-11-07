@@ -1,15 +1,35 @@
-#!name = 黄果短剧去广告纯净版
-#!desc = 屏蔽开屏广告、首页应用宫格弹窗、海报弹窗、横幅广告、系统公告弹窗，并秒过5秒开屏倒计时
+#!name = 黄果短剧去广告纯净版 v4
+#!desc = 双层去广告：Rewrite 声明式改写广告接口（不依赖远程脚本）+ Script 处理加密公告与开屏倒计时
 #!author = zhendemyq
+#!loon_version = 3.5.1(983)
 #!tag = 去广告
 
+# 2026-11-07 v4 修正记录（对接线上网关实测）：
+# 1) 线上前端已不再调用 /api/dispatch，实际调用 /api/ad/query 与 /api/app/config；
+#    旧规则只匹配 dispatch，导致脚本一次都不执行 —— 这是"配置全对但广告还在"的根因之一
+# 2) Loon 3.5.1(983)+ 使用新 Script 语法；旧 http-response + [^\/] 写法会被判为无效条目静默忽略
+# 3) 新增 Rewrite 层：response.json.replace 直接把 /api/ad/query 的 data 改成空对象密文，
+#    不依赖 raw.githubusercontent.com 下载脚本，即使手机拉不到脚本广告也能清掉
+# 4) MITM 补齐动态域名池 hgai_ops.txt 最新 4 个网关域名
+#
+# 实测依据（Node 复现网关签名后直连验证）：
+#   /api/ad/query 返回 9 个广告位 "1","2","4","5","7","8","9","10","14"，密文位于 data 字段
+#   空对象密文 "jIY1j26vNjsdMuRZijJHvQ==" 解密结果 = {}
+#   /api/app/config 的 extra.sys_notice 长度 436、official_post_text 非空
+
 [Rule]
-URL-REGEX, ^https?:\/\/[^\/]+\/api\/track\/first-launch, REJECT-200
-URL-REGEX, ^https?:\/\/[^\/]+\/api\/ad\/event, REJECT-200
+URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
+URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
+
+[Rewrite]
+# 第一层（纯本地，零依赖）：广告位接口 data 直接换成空对象密文，9 个广告位一次清空
+response if ${url} ~= /\/api\/ad\/query/i && ${response.status} == 200 then response.json.replace("data", "jIY1j26vNjsdMuRZijJHvQ==")
 
 [Script]
-http-response ^https?:\/\/[^\/]+\/api\/dispatch script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_adblock.js, requires-body=true, max-size=3145728, timeout=10, tag=黄果短剧_去广告与公告
-http-response ^https?:\/\/[^\/]+\/assets\/router-[A-Za-z0-9_-]+\.js script-path=https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_skip_splash.js, requires-body=true, max-size=3145728, timeout=10, tag=黄果短剧_秒过开屏
+# 第二层：加密公告/新客弹窗（载荷是 AES 密文，需解密后清空并重加密）
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_adblock.js") with tag="黄果短剧_去广告与公告", timeout=15, requires_body=true
+# 第三层：前端路由补丁，秒过 5 秒开屏倒计时 + 前端层短路广告查询与系统公告
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
 
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app
+hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop

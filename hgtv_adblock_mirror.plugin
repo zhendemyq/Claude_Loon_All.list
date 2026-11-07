@@ -1,0 +1,22 @@
+#!name = 黄果短剧去广告纯净版 v4(镜像版)
+#!desc = 同 v4，脚本改用 jsDelivr 镜像，适合无法访问 raw.githubusercontent.com 的网络环境
+#!author = zhendemyq
+#!loon_version = 3.5.1(983)
+#!tag = 去广告
+
+# 仅当正式版（raw.githubusercontent.com）脚本拉取失败时使用本文件
+# 注意：jsDelivr 有缓存，仓库更新后可能延迟数小时才生效，可用 @main 强制最新（本文件已用 @main）
+
+[Rule]
+URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
+URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
+
+[Rewrite]
+response if ${url} ~= /\/api\/ad\/query/i && ${response.status} == 200 then response.json.replace("data", "jIY1j26vNjsdMuRZijJHvQ==")
+
+[Script]
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_adblock.js") with tag="黄果短剧_去广告与公告", timeout=15, requires_body=true
+response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://cdn.jsdelivr.net/gh/zhendemyq/Claude_Loon_All.list@main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
+
+[MITM]
+hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
