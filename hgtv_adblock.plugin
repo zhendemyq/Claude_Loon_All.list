@@ -2,6 +2,8 @@
 #!desc = 双层去广告：Rewrite 声明式改写广告接口（不依赖远程脚本）+ Script 处理加密公告与开屏倒计时
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
+#!date = 2026-11-07
+#!type = normal
 #!tag = 去广告
 
 # 2026-11-07 v4 修正记录（对接线上网关实测）：
