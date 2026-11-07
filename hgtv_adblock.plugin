@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v9
+#!name = 黄果短剧去广告纯净版 v10
 #!desc = huangguoai.com 网页版专用：封锁第三方广告网络 adsdk*.cc，广告位拿不到素材；另含旧 SPA 接口清洗
 #!author = zhendemyq
 #!loon_version = 3.5.1(983)
@@ -30,6 +30,8 @@ DOMAIN-SUFFIX,adsdk5.cc,REJECT
 # 广告事件上报节点（广告曝光/点击统计，不影响正片播放）
 DOMAIN,api-dc-prod-008.cyou,REJECT
 DOMAIN,api-dc2-prod-08.cyou,REJECT
+# 网页版广告 SDK 脚本本体：直接拦掉，SDK 不加载就无从渲染（也绕开本地缓存）
+URL-REGEX,^https?://[a-z0-9.-]+/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js),REJECT
 # ============ 旧 H5 SPA（备用线路）埋点 ============
 URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/track\/first-launch,REJECT-200
 URL-REGEX,^https?:\/\/[a-z0-9.-]+\/api\/ad\/event,REJECT-200
@@ -45,5 +47,8 @@ response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/api\/(?:dispatch|app\/config)/i 
 response if ${url} ~= /^https?:\/\/[a-z0-9.-]+\/assets\/router-[A-Za-z0-9_-]+\.js/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgtv_skip_splash.js") with tag="黄果短剧_秒过开屏", timeout=10, requires_body=true
 
 
+# 网页版 HTML 改写：折叠并抹掉 10 个广告位（ssp-mount 靠 data-ssp-slot-key 找挂载点）+ 清理 SDK 本地广告缓存
+response if ${url} ~= /^https?:\/\/(?:(?:[a-z0-9-]+\.)*huangguoai\.(?:com|cc|app)|huangguoai\.pages\.dev)\/(?:$|\?|(?:video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail)(?:\/|$|\?))/i then script("https://raw.githubusercontent.com/zhendemyq/Claude_Loon_All.list/main/hgweb_adblock.js") with tag="黄果网页_广告位清除", timeout=20, requires_body=true
+
 [MITM]
-hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
+hostname = *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, huangguoai.pages.dev, *.huangguoai.com, *.huangguoai.cc, *.huangguoai.app, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
