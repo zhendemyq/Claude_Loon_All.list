@@ -1,28 +1,67 @@
-#!name = 黄果短剧去广告纯净版 v11(镜像版)
-#!desc = 与正式版内容完全一致。v11 起已不使用任何远程脚本，本文件仅保留给仍指向旧镜像地址的用户
+#!name = 黄果短剧去广告纯净版 v12(镜像版)
+#!desc = 与正式版内容完全一致；v12 起不再使用任何远程脚本，镜像版仅为兼容旧地址保留
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
 #!date = 2026-11-07
 #!type = normal
 #!tag = 去广告
 
-# v11 起去掉全部 [Script]：所有改写均由 Loon 原生 rewrite 指令本地完成，
-# 不再依赖 raw.githubusercontent.com / jsDelivr，因此"正式版"和"镜像版"已无区别。
+# ======================================================================
+# v12 修的是 v11 仍然"没反应"的真正原因：域名根本对不上
+#
+# 站点官方地址发布页（hgai12.com）明确写着：
+#   永久主域名 huangguoai.com ｜ 永久中转 huangguoai.ai
+#   线路 01 推荐首选  hfvoe.gitiecgad.cc
+#   线路 02 稳定      yh3cnl.gitiecgad.cc
+#   线路 03 应急      ft35a.gitiecgad.cc
+#   hgai12.com（地址发布页）／huangguoai.pages.dev（永久发布页）
+# 实测 huangguoai.io、hfvoe.gitiecgad.cc、yh3cnl.gitiecgad.cc 都是完整主站副本，
+# 广告位结构与 huangguoai.com 完全一致（同一套 SSR 模板）。
+# v4~v11 只写了 huangguoai.com/.cc/.app，用户在推荐线路上打开 → 一条规则都不匹配。
+# 本版把域名收进一个后缀正则，同时修掉 v11 的 MITM 裸域遗漏。
+#
+# 页面结构（实测首页 154KB / 视频页 201KB 源码）：
+#   <aside class="hg-ssp-slot" data-ssp-slot-key="banner_home_top_card_001" ...
+#          style="min-height:179px;width:100%;..."></aside>
+#   首页 3 个、视频页 6 个，全是空壳，min-height 写死在行内样式里。
+#   → 直接把整个 <aside ...></aside> 从源码删掉，连节点都不留。
+#
+# 另两类与 SSP 无关的广告也在这里关掉：
+#   · 播放器跳转/外链广告：SSR 内联 JSON videoInitialData.playAd
+#   · 连播前贴片视频广告（sq_ad position=15）：videoInitialData.prerollAd
+#   做法是改写字段名，前端 data.playAd / data.prerollAd 变 undefined，广告层不再挂载；
+#   同时把素材接口 /api/media/prerolls/*/playback 直接回空 JSON。
+# ======================================================================
 
 [Rule]
+# ---------- 第三方广告网络 & 上报节点 ----------
 DOMAIN-KEYWORD,adsdk,REJECT
 DOMAIN-SUFFIX,adsdk3.cc,REJECT
 DOMAIN-SUFFIX,adsdk4.cc,REJECT
 DOMAIN-SUFFIX,adsdk5.cc,REJECT
 DOMAIN,api-dc-prod-008.cyou,REJECT
 DOMAIN,api-dc2-prod-08.cyou,REJECT
+# ---------- SSP 广告 SDK 本体 ----------
+# 站点源码注释自述：故意把 SDK 改名成 ssp-core（"带 ad 字样的路径会被拦截插件整条拦掉"）
 URL-REGEX,^https?://[a-z0-9.-]+/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js),REJECT
-URL-REGEX,^https?://[a-z0-9.-]+/api/sdk/ad/,REJECT-DICT
 
 [Rewrite]
-^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex <aside[^>]*data-ssp-slot-key[^>]*></aside> <!--hg-ad-removed-->
-^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}</style></head>
-^https?://([a-z0-9-]+\.)*huangguoai\.(com|cc|app)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
+# ===== 1. 删除广告位 DOM 节点（主域 + 中转域 + 全部线路域名）=====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex <aside[^>]*data-ssp-slot-key[^>]*></aside> <!--hg-ad-removed-->
+
+# ===== 2. 关掉播放器广告（改字段名，前端读到 undefined 就不挂载）=====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex prerollAd hgxPrerollAd playAd hgxPlayAd
+
+# ===== 3. 注入 CSS 兜底（防 SDK 动态插入的悬浮/暂停/宫格广告）=====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-ON';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
+
+# ===== 4. 广告位配置接口：密文换成空对象密文（解出来是 {}）=====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
+
+# ===== 5. 贴片广告素材接口：直接回空 JSON =====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/media/prerolls/ reject-dict
 
 [MITM]
-hostname = huangguoai.com, *.huangguoai.com, huangguoai.cc, *.huangguoai.cc, huangguoai.app, *.huangguoai.app, huangguoai.pages.dev, *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
+# ⚠️ 裸域必须单独写：Loon 的 *.x 通配不包含 x 本身（官方示例里 example.com 与 *.example.org 就是分开的）
+# ⚠️ hostname 只能有一行，合并时把你原有的与下面合并成一行、去重，不要整行替换
+hostname = huangguoai.com, *.huangguoai.com, huangguoai.cc, *.huangguoai.cc, huangguoai.app, *.huangguoai.app, huangguoai.ai, *.huangguoai.ai, huangguoai.io, *.huangguoai.io, huangguoai.pages.dev, hgai12.com, *.hgai12.com, *.gitiecgad.cc, *.gtlgrwyb.cc, *.hgtdwlyo.cc, *.xfyty.top, *.huigu.top, *.dlbmhx.top, *.lzmxmq.top, *.hgtv-vmmlyt.vip, *.fi8rnajon.top, *.hgapi-ykbxse.cc, *.laotaiqiu.top, *.hgdjai.app, *.mhmtwvtu.cn, *.rmiytgvl.cn, *.sqyzcys20z.cc, *.bpvykh-mgapi.shop
