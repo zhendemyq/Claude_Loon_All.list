@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v15(镜像版)
+#!name = 黄果短剧去广告纯净版 v16(镜像版)
 #!desc = 与正式版内容完全一致；镜像版仅为兼容旧订阅地址保留
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
@@ -60,7 +60,7 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex prerollAd hgxPrerollAd playAd hgxPlayAd
 
 # ===== 3. 注入 CSS 兜底（防 SDK 动态插入的悬浮/暂停/宫格广告）=====
-^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-v15';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-v16';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
 
 # ===== 4. 广告位配置接口：密文换成空对象密文（解出来是 {}）=====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
@@ -90,6 +90,21 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 # 直接走明线 fetch —— 上面第 4/5/6/7 条规则就能真正拦到它们。
 # 替换值用 [\x2f] 代替 \/，避免反斜杠在 Loon 替换串里的转义歧义。
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/edge-cache-runtime\.js response-body-replace-regex edge\|remote edge|remote|site[\x2f]home-slots|sdk[\x2f]ad|ad[\x2f]query|media[\x2f]prerolls
+
+# ===== 10. (v16 核心 A) 网关层直接摘除广告数据 =====
+# 实测网关把内部响应原文直接返回（无信封）。轮播组件是全站唯一使用 isAd 字段的代码，
+# 它只挑 isAd=true 的项进轮播。把网关响应里的 isAd:true 全部改成 false：
+# 轮播拿到 0 个广告项，其他功能零影响。此规则不依赖任何脚本补丁送达。
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/edge/request response-body-replace-regex \"isAd\":true \"isAd\":false
+
+# ===== 11. (v16 核心 B) 破脚本强缓存 =====
+# 静态脚本 Cache-Control: max-age=3600 且内容不变 → 过期后 Safari 发 304 校验，
+# 304 不传输响应体，改写永远没机会应用 —— 这是 v15 补丁"已推送但没生效"的原因。
+# 改写 HTML 里的版本号参数强制浏览器重新下载全部脚本（新版 URL 首次就经过 Loon 改写）。
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex \?v=20261106002 ?v=20261106002k16
+
+# ===== 12. (v16) web-sdk 无版本参数，单独加戳 =====
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex web-sdk-v1\.2\.0-20261029\.js web-sdk-v1.2.0-20261029.js?k16
 
 [MITM]
 # ⚠️ 裸域必须单独写：Loon 的 *.x 通配不包含 x 本身（官方示例里 example.com 与 *.example.org 就是分开的）
