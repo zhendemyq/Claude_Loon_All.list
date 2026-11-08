@@ -1,4 +1,4 @@
-#!name = 黄果短剧去广告纯净版 v16(镜像版)
+#!name = 黄果短剧去广告纯净版 v17(镜像版)
 #!desc = 与正式版内容完全一致；镜像版仅为兼容旧订阅地址保留
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
@@ -11,7 +11,7 @@
 #   用户反馈 v13 后"点击/播放特别慢"：Loon [Rule] REJECT 是直接断连，
 #   Safari 会重试干等到超时。改用 reject-dict 立刻回 {}（合法 JSON/JS），
 #   前端立刻拿到响应：广告判断失败静默跳过，页面不再卡。
-#   同时把徽标改为带版本号 AD-BLOCK-v14，便于远程确认用户跑的是哪版。
+#   v14~v16 曾用左下角徽标显示版本号便于远程排查，v17 已全部移除。
 #
 # v13 新增：掐断首页大图轮播广告的供数接口 /api/site/home-slots
 #   （home-hero.js 把该接口返回的 isAd 项合并进轮播；接口失败会被静默 catch，
@@ -60,7 +60,7 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex prerollAd hgxPrerollAd playAd hgxPlayAd
 
 # ===== 3. 注入 CSS 兜底（防 SDK 动态插入的悬浮/暂停/宫格广告）=====
-^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-v16';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}</style></head>
 
 # ===== 4. 广告位配置接口：密文换成空对象密文（解出来是 {}）=====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
