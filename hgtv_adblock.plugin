@@ -1,5 +1,5 @@
-#!name = 黄果短剧去广告纯净版 v14
-#!desc = 全部走Rewrite立即响应（不再REJECT断连，解决加载慢），徽标显示当前版本
+#!name = 黄果短剧去广告纯净版 v15
+#!desc = 破解API聚合网关：让广告接口绕过edge改道走明线，再被reject-dict拦截
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
 #!date = 2026-11-07
@@ -60,7 +60,7 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex prerollAd hgxPrerollAd playAd hgxPlayAd
 
 # ===== 3. 注入 CSS 兜底（防 SDK 动态插入的悬浮/暂停/宫格广告）=====
-^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-v14';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex </head> <style>.hg-ssp-slot,[data-ssp-slot-key],[data-ssp-floating-container],.hg-ssp-floating,.hg-ssp-pause__card,[data-ssp-pause]{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}body::after{content:'AD-BLOCK-v15';position:fixed;left:2px;bottom:2px;z-index:2147483647;font-family:monospace;font-size:11px;color:#0f0;background:#000c;padding:2px;border-radius:3px;pointer-events:none}</style></head>
 
 # ===== 4. 广告位配置接口：密文换成空对象密文（解出来是 {}）=====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/api/ad/query response-body-json-replace data "jIY1j26vNjsdMuRZijJHvQ=="
@@ -80,6 +80,16 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 # ===== 8. (v14) SSP 广告 SDK 脚本本体：回 200 空 JSON（合法 JS，不报错不重试） =====
 # 站点源码注释自述：故意把 SDK 改名成 ssp-core（"带 ad 字样的路径会被拦截插件整条拦掉"）
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/(lib/(web-sdk|ssp-core)-[A-Za-z0-9._-]+\.js|ssp-mount\.js|ssp-cache-scope\.js) reject-dict
+
+# ===== 9. (v15 核心修复) 破解 API 聚合网关 =====
+# 页面把 window.fetch 整个劫持（edge-cache-runtime.js），所有 /api/* 请求都改道到
+# POST /api/edge/request，真实路径只存在于请求体里 —— 所以 v13/v14 按路径写的
+# 接口规则在线路上根本看不到目标请求，全部被架空。
+# 该脚本里 /^\/api\/(?:edge|remote)(?:\/|$)/ 是"不改道名单"，且 edge|remote 全文唯一。
+# 这里把它扩成：广告相关接口（轮播供数/SDK供数/ad-query/贴片素材）不再改道，
+# 直接走明线 fetch —— 上面第 4/5/6/7 条规则就能真正拦到它们。
+# 替换值用 [\x2f] 代替 \/，避免反斜杠在 Loon 替换串里的转义歧义。
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/edge-cache-runtime\.js response-body-replace-regex edge\|remote edge|remote|site[\x2f]home-slots|sdk[\x2f]ad|ad[\x2f]query|media[\x2f]prerolls
 
 [MITM]
 # ⚠️ 裸域必须单独写：Loon 的 *.x 通配不包含 x 本身（官方示例里 example.com 与 *.example.org 就是分开的）
