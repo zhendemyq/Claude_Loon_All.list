@@ -1,23 +1,24 @@
-#!name = 黄果短剧去广告纯净版 v18(镜像版)
+#!name = 黄果短剧去广告纯净版 v19(镜像版)
 #!desc = 与正式版内容完全一致；镜像版仅为兼容旧订阅地址保留
 #!author = zhendemyq
-#!loon_version = 3.5.1(978)
+#!loon_version = 3.5.1(729)
 #!date = 2026-11-07
 #!type = normal
 #!tag = 去广告
 
 # ======================================================================
-# v18：解决"播放很卡" —— 换用站点自带的 HEVC 源
+# v19：修掉 v18 造成的"页面打不开"，并换一条路实现 HEVC 提速
+#   v18 用新语法 response if ... then response.body.replace(...) 去对调播放接口里
+#   main / hevc 两条 URL。致命点：该规则同时匹配 /api/edge/request，而全站数据
+#   都经这个聚合网关，replace 一旦异常响应体就变空 —— 页面白屏、什么都加载不出来。
+#   做法改为改写播放脚本 cyber-video.js，走的是和第 9 条相同、已被验证的常规链路。
+#
 #   实测同一集的两条流（真实下载测速，非估算）：
 #     streams.main (H.264) : 1280x720  ，平均 8.87 Mbps  ← 站点默认给这条
 #     streams.hevc (H.265) : 1920x1080 ，平均 2.18 Mbps  ← 站点备着但不默认用
 #   H.264 这条码率是 H.265 的 4 倍、分辨率还低一档，手机带宽稍差就必然卡。
 #   hevc 的 m3u8 是标准 fMP4（VERSION:6 / EXT-X-MAP / ENDLIST），init 段里是
 #   hvc1 而非 hev1 —— 正是 Safari 唯一支持的写法，iOS 原生即可播。
-#   做法：在播放接口响应里把 main 与 hevc 两条 URL 对调，
-#     前端读到 main 就是 HEVC 源，原来的 H.264 留在 hevc 字段当失败回退。
-#   仅在 hevc 非空时生效（约 83% 的剧有 HEVC 源），hevc 为空的剧保持原样。
-#   仅对 iPhone/iPad/Mac 生效，Android 等不支持 HEVC 的设备不受影响。
 #
 # 另加两条提速规则：
 #   · 视频/图片 CDN（drleao.cn、hzjvlo.cn）是国内腾讯云，实测直连 60-90 Mbps，
@@ -132,15 +133,23 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 # ===== 12. (v16) web-sdk 无版本参数，单独加戳 =====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex web-sdk-v1\.2\.0-20261029\.js web-sdk-v1.2.0-20261029.js?k16
 
-# ===== 13. (v18 核心) 播放源对调：main ← hevc，解决播放卡顿 =====
-# 站点在同一个接口里同时给两条流，前端只用 streams.main（H.264 720p / 8.87 Mbps），
-# streams.hevc（H.265 1080p / 2.18 Mbps）只被记下来当回退。这里把两条 URL 对调：
-#   "main":"<H264>","hevc":"<HEVC>"  →  "main":"<HEVC>","hevc":"<H264>"
-# 前端因此直接播 HEVC（更清晰且码率只有 1/4），原 H.264 留在 hevc 字段做失败回退。
-# · 仅当 hevc 非空时正则才命中（要求 "hevc":"https...），无 HEVC 的剧保持原样；
-# · 用 \x2c 写逗号，避免被当成参数分隔符；
-# · 仅对 iPhone/iPad/Mac 生效，不支持 HEVC 的设备完全不受影响。
-response if ${url} ~= /^https:\/\/(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)\/api\/(?:edge\/request|videos\/|media\/playback\/)/ && ${request.header['User-Agent']} ~= /iPhone|iPad|Macintosh/ then response.body.replace(/"main":"([^"]*)"\x2c"hevc":"(https[^"]+)"/, "\"main\":\"$2\",\"hevc\":\"$1\"")
+# ===== 13. (v19) 播放源换用 HEVC：改播放脚本，而不是改接口响应 =====
+# v18 曾用新语法 response if ... then response.body.replace(...) 直接对调接口里的两条 URL，
+# 结果页面整体打不开：那条规则同时作用于 /api/edge/request —— 全站数据都经这个网关，
+# 一旦 replace 执行异常，响应体变空，页面就彻底空白。新语法在部分 Loon 版本上也不支持。
+# v19 改回"改写静态脚本"这条已被验证的链路（第 9 条就是这么工作的）：
+#   · 前端只用 streams.main（H.264 720p / 8.87 Mbps），streams.hevc（H.265 1080p /
+#     2.18 Mbps）只被存成回退 —— 把两处赋值对调，播放器就会先播 HEVC，H.264 留作回退；
+#   · 换集的那个 setSource 同步改成优先 HEVC，避免切集后回到高码率源；
+#   · 脚本 URL 带 ?v=20261106002，会被第 11 条改成 k16 → 新 URL 必然重新下载并经过本改写。
+# 站点自己的 hevc 源是标准 fMP4 + hvc1 编码，Safari 原生可播。
+# ⚠️ 旧语法按空格切分参数：正则/替换里的空格一律写 \x20（官方文档明确要求），
+#    否则整条规则解析失败 —— 这也是 v19 特意避开带空格写法的原因。
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/pages/cyber-video\.js response-body-replace-regex initialPayload\.streams\.main (initialPayload.streams.hevc||initialPayload.streams.main)
+
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/pages/cyber-video\.js response-body-replace-regex data\.videoSrcHevc\x20=\x20initialPayload\.streams\.hevc\x20\|\|\x20'' data.videoSrcHevc\x20=\x20initialPayload.streams.main\x20||\x20''
+
+^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/static/web/js/pages/cyber-video\.js response-body-replace-regex setSource\(payload\.streams\.main\) setSource(payload.streams.hevc||payload.streams.main)
 
 [MITM]
 # ⚠️ 裸域必须单独写：Loon 的 *.x 通配不包含 x 本身（官方示例里 example.com 与 *.example.org 就是分开的）
