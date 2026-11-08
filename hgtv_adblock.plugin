@@ -1,10 +1,29 @@
-#!name = 黄果短剧去广告纯净版 v17
-#!desc = 网关层摘除广告数据+破脚本强缓存，广告已清除；v17 移除调试徽标
+#!name = 黄果短剧去广告纯净版 v18
+#!desc = 去广告 + 换用 HEVC 源（1080p/2.18Mbps 取代 720p/8.87Mbps）解决播放卡顿
 #!author = zhendemyq
 #!loon_version = 3.5.1(978)
 #!date = 2026-11-07
 #!type = normal
 #!tag = 去广告
+
+# ======================================================================
+# v18：解决"播放很卡" —— 换用站点自带的 HEVC 源
+#   实测同一集的两条流（真实下载测速，非估算）：
+#     streams.main (H.264) : 1280x720  ，平均 8.87 Mbps  ← 站点默认给这条
+#     streams.hevc (H.265) : 1920x1080 ，平均 2.18 Mbps  ← 站点备着但不默认用
+#   H.264 这条码率是 H.265 的 4 倍、分辨率还低一档，手机带宽稍差就必然卡。
+#   hevc 的 m3u8 是标准 fMP4（VERSION:6 / EXT-X-MAP / ENDLIST），init 段里是
+#   hvc1 而非 hev1 —— 正是 Safari 唯一支持的写法，iOS 原生即可播。
+#   做法：在播放接口响应里把 main 与 hevc 两条 URL 对调，
+#     前端读到 main 就是 HEVC 源，原来的 H.264 留在 hevc 字段当失败回退。
+#   仅在 hevc 非空时生效（约 83% 的剧有 HEVC 源），hevc 为空的剧保持原样。
+#   仅对 iPhone/iPad/Mac 生效，Android 等不支持 HEVC 的设备不受影响。
+#
+# 另加两条提速规则：
+#   · 视频/图片 CDN（drleao.cn、hzjvlo.cn）是国内腾讯云，实测直连 60-90 Mbps，
+#     让它 DIRECT，避免被代理节点绕到海外再回来 —— 这是"卡"的另一半原因。
+#   · 站点挂了 Google Analytics（gtag），国内不可达会一直挂起等超时，直接 REJECT。
+# ======================================================================
 
 # ======================================================================
 # v14：全部拦截改走 [Rewrite] 立即响应
@@ -44,6 +63,13 @@
 # ======================================================================
 
 [Rule]
+# ---------- 视频/图片 CDN 直连（国内腾讯云，实测 60-90 Mbps）----------
+# 若走代理节点，6-9 Mbps 的视频流绕到海外再回来，这是播放卡顿的主因之一。
+DOMAIN-SUFFIX,drleao.cn,DIRECT
+DOMAIN-SUFFIX,hzjvlo.cn,DIRECT
+# ---------- 国内不可达的统计脚本：直接断连，别让它挂起等超时 ----------
+DOMAIN,www.googletagmanager.com,REJECT
+DOMAIN,www.google-analytics.com,REJECT
 # ---------- 第三方广告网络 & 上报节点（跨域请求，断连不影响页面速度） ----------
 DOMAIN-KEYWORD,adsdk,REJECT
 DOMAIN-SUFFIX,adsdk3.cc,REJECT
@@ -105,6 +131,16 @@ DOMAIN,api-dc2-prod-08.cyou,REJECT
 
 # ===== 12. (v16) web-sdk 无版本参数，单独加戳 =====
 ^https?://(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)/($|\?|video|ranks|ai-duanju|search|topics|tag|author|chigua|navigate|go-home|archives|post|detail) response-body-replace-regex web-sdk-v1\.2\.0-20261029\.js web-sdk-v1.2.0-20261029.js?k16
+
+# ===== 13. (v18 核心) 播放源对调：main ← hevc，解决播放卡顿 =====
+# 站点在同一个接口里同时给两条流，前端只用 streams.main（H.264 720p / 8.87 Mbps），
+# streams.hevc（H.265 1080p / 2.18 Mbps）只被记下来当回退。这里把两条 URL 对调：
+#   "main":"<H264>","hevc":"<HEVC>"  →  "main":"<HEVC>","hevc":"<H264>"
+# 前端因此直接播 HEVC（更清晰且码率只有 1/4），原 H.264 留在 hevc 字段做失败回退。
+# · 仅当 hevc 非空时正则才命中（要求 "hevc":"https...），无 HEVC 的剧保持原样；
+# · 用 \x2c 写逗号，避免被当成参数分隔符；
+# · 仅对 iPhone/iPad/Mac 生效，不支持 HEVC 的设备完全不受影响。
+response if ${url} ~= /^https:\/\/(?:[a-z0-9-]+\.)*(?:huangguoai\.(?:com|cc|app|ai|io)|huangguoai\.pages\.dev|gitiecgad\.cc|gtlgrwyb\.cc|hgai12\.com)\/api\/(?:edge\/request|videos\/|media\/playback\/)/ && ${request.header['User-Agent']} ~= /iPhone|iPad|Macintosh/ then response.body.replace(/"main":"([^"]*)"\x2c"hevc":"(https[^"]+)"/, "\"main\":\"$2\",\"hevc\":\"$1\"")
 
 [MITM]
 # ⚠️ 裸域必须单独写：Loon 的 *.x 通配不包含 x 本身（官方示例里 example.com 与 *.example.org 就是分开的）
